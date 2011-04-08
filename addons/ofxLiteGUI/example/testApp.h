@@ -12,6 +12,10 @@ class testApp : public ofBaseApp{
 		void setup();
 		void update();
 		void draw();
+	
+		void liteBoxDragged(ofxLiteEventBoxDragged& event);
+		void liteBoxSelected(ofxLiteEventBoxSelected& event);
+		void liteGroupSorted(ofxLiteEventGroupSorted& event);
 
 		void keyPressed  (int key);
 		void keyReleased(int key);

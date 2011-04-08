@@ -10,6 +10,26 @@
 #define _OFX_LITE_GUI_BOX
 
 #include "ofMain.h"
+#include "ofxLiteEvent.h"
+
+class ofxLiteEventBoxDragged : public ofxLiteEvent{
+public:
+	ofPoint draggedTo;
+	bool isDragging;
+	
+	ofxLiteEventBoxDragged(ofxLiteBox* lite=NULL, bool isDragging=false, ofPoint draggedTo = ofPoint(-1,-1)):ofxLiteEvent(lite){
+		this->draggedTo = draggedTo;
+		this->isDragging = isDragging;
+	};
+};
+
+class ofxLiteEventBoxSelected : public ofxLiteEvent{
+public:
+	bool selected;
+	ofxLiteEventBoxSelected(ofxLiteBox* lite=NULL, bool selected=true):ofxLiteEvent(lite){
+		this->selected = selected;
+	};
+};
 
 class ofxLiteBox {
 protected:
@@ -65,7 +85,11 @@ public:
 	virtual bool mouseDragged(int x, int y, int button);
 	virtual bool mousePressed(int x, int y, int button);
 	virtual bool mouseReleased(int x, int y, int button);
-
+	
+	struct{
+		ofEvent<ofxLiteEventBoxDragged> boxDragged;
+		ofEvent<ofxLiteEventBoxSelected> boxSelected;
+	} boxEvents;
 };
 
 #endif

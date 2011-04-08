@@ -155,7 +155,12 @@ void ofxLiteBox::setPadding(float top, float left, float bottom, float right){
 }
 
 void ofxLiteBox::setSelected(bool selected){
-	this->selected = selected;
+	if(this->selected != selected){
+		this->selected = selected;
+
+		ofxLiteEventBoxSelected eventArgs(this, selected);
+		ofNotifyEvent(boxEvents.boxSelected, eventArgs, this);
+	}
 }
 
 bool ofxLiteBox::inBounds(int x, int y){
@@ -180,6 +185,9 @@ bool ofxLiteBox::mouseDragged(int x, int y, int button){
 		
 		dragPosition.x = x;
 		dragPosition.y = y;
+		
+		ofxLiteEventBoxDragged eventArgs(this, true, dragPosition);
+		ofNotifyEvent(boxEvents.boxDragged, eventArgs, this);
 	}
 	return result;
 }
@@ -196,9 +204,13 @@ bool ofxLiteBox::mousePressed(int x, int y, int button){
 }
 
 bool ofxLiteBox::mouseReleased(int x, int y, int button){
-	bool result = false;
+	bool result = false;	
 	pressOffset.x = pressOffset.y = -1.0;
 	dragPosition.x = dragPosition.y = 0.0;
-	dragging = false;
+	if(dragging){
+		ofxLiteEventBoxDragged eventArgs(this, false, ofPoint(x, y));
+		ofNotifyEvent(boxEvents.boxDragged, eventArgs, this);
+		dragging = false;
+	}
 	return result;
 }

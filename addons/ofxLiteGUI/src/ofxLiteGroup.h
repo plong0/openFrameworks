@@ -11,9 +11,19 @@
 
 #include "ofxLiteBox.h"
 
-class ofxLiteGroup{
+class ofxLiteEventGroupSorted : public ofxLiteEvent{
+public:
+	vector<ofxLiteBox*>* sortedBoxes;
+	int oldPosition, newPosition;
+	
+	ofxLiteEventGroupSorted(ofxLiteBox* lite=NULL, vector<ofxLiteBox*>* sortedBoxes=NULL):ofxLiteEvent(lite){
+		this->sortedBoxes = sortedBoxes;
+		oldPosition = newPosition = -1;
+	};
+};
+
+class ofxLiteGroup : public ofxLiteBox{
 protected:
-	string name;
 	map<string,ofxLiteBox*> boxes;
 	float spacing;
 	float maxHeight;
@@ -25,7 +35,7 @@ protected:
 	ofxLiteBox* dragBox;
 	
 	int getPosition(float x, float y);
-	
+	int getPosition(ofxLiteBox* box);
 	void removeBoxFromSorted(ofxLiteBox* box);
 	void sortBox(ofxLiteBox* box, int position);
 	
@@ -37,22 +47,30 @@ public:
 	void update();
 	
 	ofxLiteBox* addBox(string name, ofxLiteBox* value);
+	virtual void listenToBox(ofxLiteBox* box);
 	
 	map<string,ofxLiteBox*>* getBoxes();
-	vector<ofxLiteBox*> getSortedBoxes();
+	vector<ofxLiteBox*>* getSortedBoxes();
 	
 	bool hasBox(string name);
+	ofxLiteBox* removeBox(string name, bool doDelete=true);
 	
 	void setMaxHeight(float maxHeight=-1.0);
-	void setName(string name);
 	void setSortable(bool sortable=false, bool updateBoxDrags=true);
 	void setSpacing(float spacing=5.0);
 	ofxLiteBox* setValue(string name, string value);
 	
-	bool mouseMoved(int x, int y);
-	bool mouseDragged(int x, int y, int button);
-	bool mousePressed(int x, int y, int button);
-	bool mouseReleased(int x, int y, int button);
+	virtual bool mouseMoved(int x, int y);
+	virtual bool mouseDragged(int x, int y, int button);
+	virtual bool mousePressed(int x, int y, int button);
+	virtual bool mouseReleased(int x, int y, int button);
+	
+	void childBoxDragged(ofxLiteEventBoxDragged& event);
+	void childBoxSelected(ofxLiteEventBoxSelected& event);
+	
+	struct{
+		ofEvent<ofxLiteEventGroupSorted> groupSorted;
+	} groupEvents;
 };
 
 #endif

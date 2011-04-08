@@ -9,8 +9,7 @@
 
 #include "ofxLiteGroup.h"
 
-ofxLiteGroup::ofxLiteGroup(string name){
-	setName(name);
+ofxLiteGroup::ofxLiteGroup(string name) : ofxLiteBox(name){
 	setSpacing();
 	setMaxHeight();
 	setSortable(false, false);
@@ -115,10 +114,26 @@ int ofxLiteGroup::getPosition(float x, float y){
 	return result;
 }
 
+int ofxLiteGroup::getPosition(ofxLiteBox* box){
+	for(int i=0; i < sortedBoxes.size(); i++){
+		if(sortedBoxes[i] == box)
+			return i;
+	}
+	return -1;
+}
+
 void ofxLiteGroup::sortBox(ofxLiteBox* box, int position){
 	if(position >= 0 && position < sortedBoxes.size()){
-		removeBoxFromSorted(box);
-		sortedBoxes.insert(sortedBoxes.begin()+position, box);
+		int cPosition = getPosition(box);
+		if(cPosition != position){		
+			removeBoxFromSorted(box);
+			sortedBoxes.insert(sortedBoxes.begin()+position, box);
+			
+			ofxLiteEventGroupSorted eventArgs(this, &sortedBoxes);
+			eventArgs.oldPosition = cPosition;
+			eventArgs.newPosition = position;
+			ofNotifyEvent(groupEvents.groupSorted, eventArgs, this);
+		}
 	}
 }
 
@@ -141,23 +156,51 @@ ofxLiteBox* ofxLiteGroup::addBox(string name, ofxLiteBox* value){
 		boxes[name]->setDraggable(sortable);
 	if(result != NULL)
 		removeBoxFromSorted(result);
+	
+	listenToBox(value);
+	
 	return result;
+}
+
+void ofxLiteGroup::listenToBox(ofxLiteBox* box){
+	if(box != NULL){
+		ofAddListener(box->boxEvents.boxDragged, this, &ofxLiteGroup::childBoxDragged);
+		ofAddListener(box->boxEvents.boxSelected, this, &ofxLiteGroup::childBoxSelected);
+	}
 }
 
 map<string,ofxLiteBox*>* ofxLiteGroup::getBoxes(){
 	return &boxes;
 }
 
+vector<ofxLiteBox*>* ofxLiteGroup::getSortedBoxes(){
+	return &sortedBoxes;
+}
+
 bool ofxLiteGroup::hasBox(string name){
 	return (boxes.count(name) > 0);
 }
 
-void ofxLiteGroup::setMaxHeight(float maxHeight){
-	this->maxHeight = maxHeight;
+ofxLiteBox* ofxLiteGroup::removeBox(string name, bool doDelete){
+	ofxLiteBox* removedBox = NULL;
+	for(map<string,ofxLiteBox*>::iterator boxIt = boxes.begin(); boxIt != boxes.end(); boxIt++){
+		if(boxIt->first == name){
+			removedBox = boxIt->second;
+			if(removedBox != NULL)
+				removeBoxFromSorted(removedBox);
+			boxes.erase(boxIt);
+			if(doDelete && removedBox != NULL){
+				delete removedBox;
+				removedBox = NULL;
+			}
+			break;
+		}
+	}
+	return removedBox;
 }
 
-void ofxLiteGroup::setName(string name){
-	this->name = name;
+void ofxLiteGroup::setMaxHeight(float maxHeight){
+	this->maxHeight = maxHeight;
 }
 
 void ofxLiteGroup::setSortable(bool sortable, bool updateBoxDrags){
@@ -241,3 +284,10 @@ bool ofxLiteGroup::mouseReleased(int x, int y, int button){
 	return result;
 }
 
+void ofxLiteGroup::childBoxDragged(ofxLiteEventBoxDragged& event){
+	ofNotifyEvent(boxEvents.boxDragged, event, this);
+}
+
+void ofxLiteGroup::childBoxSelected(ofxLiteEventBoxSelected& event){
+	ofNotifyEvent(boxEvents.boxSelected, event, this);
+}
