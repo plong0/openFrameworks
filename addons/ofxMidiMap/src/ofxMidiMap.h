@@ -8,6 +8,7 @@
 #ifndef _OFX_MIDI_MAP_H
 #define _OFX_MIDI_MAP_H
 
+#include "ofxLiteGUI.h"
 #include "ofxMidi.h"
 
 class ofxMidiMapValueUpdateEvent : public ofEventArgs{
@@ -19,92 +20,58 @@ public:
 class ofxMidiMap{
 protected:
 	// Generic display of a name, value pair
-	struct ValueDisplay{
-		string name;
-		string value;
-		ofRectangle bounds;
-		
-		bool hover;
-		bool selected;
-		
-		ValueDisplay(string name, string value="");
-		
-		void drawHoverBox();
-		void drawLinkBox(bool fill);
-		void drawSelectedBox();
-		virtual void draw(float x, float y);
-		virtual void update();
-		
-		virtual void setSelected(bool selected);
-		virtual void setValue(string value);
-		
-		bool inBounds(int x, int y);
-		bool isHovered();
-		bool isSelected();
-		
-		virtual bool mouseMoved(int x, int y);
-		virtual bool mouseDragged(int x, int y, int button);
-		virtual bool mousePressed(int x, int y, int button);
-		virtual bool mouseReleased(int x, int y, int button);
+	class LinkedBox : public ofxLiteBox{
+		public:
+			LinkedBox(string name="Value", string value="");
+			
+			void drawLinkBox(bool fill, float x=-1.0, float y=-1.0);
+			virtual void drawContent(float x=-1.0, float y=-1.0);
 	};
-	
-	// Generic display of a group of values
-	struct ValueDisplayGroup{
-		string name;
-		map<string,ValueDisplay*> values;
 		
-		ValueDisplayGroup(string name="");
-		~ValueDisplayGroup();
-		
-		void draw(float x, float y);
-		void update();
-		
-		ValueDisplay* addValue(string name, ValueDisplay* value);
-		void setName(string name);
-		void setValue(string name, string value);
-		
-		bool mouseMoved(int x, int y);
-		bool mouseDragged(int x, int y, int button);
-		bool mousePressed(int x, int y, int button);
-		bool mouseReleased(int x, int y, int button);
-	};
-	
-	struct MidiControlDisplay; // forward declaration
+	class MidiControlDisplay; // forward declaration
 	
 	// Displays a controlled value
-	struct ControlledValueDisplay : ValueDisplay{		
-		ofxMidiMap* midiMap; // needed for triggering events
-		int* controlValue;
+	class ControlledValueDisplay : public LinkedBox{
+		protected:
+			ofxMidiMap* midiMap; // needed for triggering events
+			int* controlValue;
+			
+			MidiControlDisplay* midiValue;
+			
+		public:
+			ControlledValueDisplay(string name, int* controlValue);
+			
+			virtual void drawContent(float x=-1.0, float y=-1.0);
 		
-		MidiControlDisplay* midiValue;
+			MidiControlDisplay* getMidiValue();
 		
-		ControlledValueDisplay(string name, int* controlValue);
-		
-		virtual void draw(float x, float y);
-		
-		virtual void setSelected(bool selected);
-		virtual void setValue(string value);
+			void setMidiMap(ofxMidiMap* midiMap);
+			void setMidiValue(MidiControlDisplay* midiValue);
+			virtual void setSelected(bool selected);
+			virtual void setValue(string value);
 	};
 	
 	// Displays a Midi Controller value
-	struct MidiControlDisplay : ValueDisplay{
-		map<string,ControlledValueDisplay*> controlledValues;
+	class MidiControlDisplay : public LinkedBox{
+		protected:
+			map<string,ControlledValueDisplay*> controlledValues;
 		
-		MidiControlDisplay(string name, string value="");
-		
-		virtual void draw(float x, float y);
-		
-		bool addControlledValue(ControlledValueDisplay* controlValue);
-		bool removeControlledValue(ControlledValueDisplay* controlValue);
-		
-		virtual void setSelected(bool selected);
-		virtual void setValue(string value);
+		public:
+			MidiControlDisplay(string name, string value="");
+			
+			virtual void drawContent(float x=-1.0, float y=-1.0);
+			
+			bool addControlledValue(ControlledValueDisplay* controlValue);
+			bool removeControlledValue(ControlledValueDisplay* controlValue);
+			
+			virtual void setSelected(bool selected);
+			virtual void setValue(string value);
 	};
 	
 	ofxMidiIn* midiIn;
 	
-	ValueDisplayGroup controlledValues;
-	ValueDisplayGroup midiValues;
+	ofxLiteGroup controlledValues;
+	ofxLiteGroup midiValues;
 	
 	ControlledValueDisplay* selectedControlled;
 	MidiControlDisplay* selectedMidiControl;
