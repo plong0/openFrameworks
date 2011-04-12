@@ -333,7 +333,6 @@ void ofxLiteBox::setPressed(bool pressed, ofPoint pressAt, bool updatePressOffse
 
 void ofxLiteBox::setSelected(bool selected){
 	if(this->selected != selected){
-		cout << "setSelected..." << (selected?"yes":"no") << endl;
 		this->selected = selected;
 
 		onSelect(selected);

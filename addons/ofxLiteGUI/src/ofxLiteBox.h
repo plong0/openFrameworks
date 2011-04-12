@@ -10,6 +10,7 @@
 #define _OFX_LITE_GUI_BOX
 
 #include "ofMain.h"
+#include "ofxLiteBoxTypes.h"
 #include "ofxLiteEvent.h"
 
 class ofxLiteEventBoxDragged : public ofxLiteEvent{
@@ -118,6 +119,8 @@ protected:
 public:
 	ofxLiteBox(string name="LiteBox", string value="");
 	~ofxLiteBox();
+	
+	virtual int getBoxType(){ return OFX_LITE_BOX_TYPE_BOX; };
 	
 	void configureAsButton(int triggerDelay=150);
 	void configureAsDraggableBox();
