@@ -14,7 +14,11 @@ class testApp : public ofBaseApp{
 		void draw();
 	
 		void liteBoxDragged(ofxLiteEventBoxDragged& event);
+		void liteBoxDragHovered(ofxLiteEventBoxDragHovered& event);
+		void liteBoxHovered(ofxLiteEventBoxHovered& event);
+		void liteBoxPressed(ofxLiteEventBoxPressed& event);
 		void liteBoxSelected(ofxLiteEventBoxSelected& event);
+		void liteBoxTriggered(ofxLiteEventBoxTriggered& event);
 		void liteGroupSorted(ofxLiteEventGroupSorted& event);
 
 		void keyPressed  (int key);
