@@ -34,6 +34,8 @@ protected:
 	ofPoint mouse;
 	ofxLiteBox* dragBox;
 	
+	virtual void onSort(int oldPosition=-1, int newPosition=-1);
+	
 	int getPosition(float x, float y);
 	int getPosition(ofxLiteBox* box);
 	void removeBoxFromSorted(ofxLiteBox* box);
@@ -43,7 +45,7 @@ public:
 	ofxLiteGroup(string name="LiteGroup");
 	~ofxLiteGroup();
 	
-	void draw(float x, float y);
+	virtual void drawContent(float x=-1.0, float y=-1.0);
 	void update();
 	
 	ofxLiteBox* addBox(string name, ofxLiteBox* value);
@@ -66,7 +68,11 @@ public:
 	virtual bool mouseReleased(int x, int y, int button);
 	
 	void childBoxDragged(ofxLiteEventBoxDragged& event);
+	void childBoxDragHovered(ofxLiteEventBoxDragHovered& event);
+	void childBoxHovered(ofxLiteEventBoxHovered& event);
+	void childBoxPressed(ofxLiteEventBoxPressed& event);
 	void childBoxSelected(ofxLiteEventBoxSelected& event);
+	void childBoxTriggered(ofxLiteEventBoxTriggered& event);
 	
 	struct{
 		ofEvent<ofxLiteEventGroupSorted> groupSorted;

@@ -12,6 +12,10 @@
 ofxLiteGroup::ofxLiteGroup(string name) : ofxLiteBox(name){
 	setSpacing();
 	setMaxHeight();
+	setHoverable(false);
+	setDraggable(false);
+	setSelectable(false);
+	setTriggerable(false);
 	setSortable(false, false);
 	dragBox = NULL;
 }
@@ -30,9 +34,17 @@ ofxLiteGroup::~ofxLiteGroup(){
 	boxes.clear();
 }
 
+void ofxLiteGroup::onSort(int oldPosition, int newPosition){
+	ofxLiteEventGroupSorted eventArgs(this, &sortedBoxes);
+	eventArgs.oldPosition = oldPosition;
+	eventArgs.newPosition = newPosition;
+	ofNotifyEvent(groupEvents.groupSorted, eventArgs, this);
+}
 
-void ofxLiteGroup::draw(float x, float y){
+void ofxLiteGroup::drawContent(float x, float y){
 	if(maxHeight == -1.0) maxHeight = ofGetHeight() - y;
+	if(x == -1.0) x = bounds.x;
+	if(y == -1.0) y = bounds.y;
 	
 	float minX = spacing;
 	float minY = spacing;
@@ -56,8 +68,6 @@ void ofxLiteGroup::draw(float x, float y){
 	}
 	
 	float cColWidth = 0.0;
-//	for(map<string,ofxLiteBox*>::iterator boxIt = boxes.begin(); boxIt != boxes.end(); boxIt++){
-//		ofxLiteBox* cBox = boxIt->second;
 	for(int i=0; i < sortedBoxes.size(); i++){
 		ofxLiteBox* cBox = sortedBoxes[i];
 		if(cBox != NULL){
@@ -89,6 +99,13 @@ void ofxLiteGroup::draw(float x, float y){
 	
 	ofNoFill();
 	ofRect(x, y, width, height);
+	
+	if(dynamicBounds){
+		if(bounds.x != x) bounds.x = x;
+		if(bounds.y != y) bounds.y = y;
+		if(bounds.width != width) bounds.width = width;
+		if(bounds.height != height) bounds.height = height;
+	}
 }
 
 void ofxLiteGroup::update(){
@@ -106,11 +123,9 @@ int ofxLiteGroup::getPosition(float x, float y){
 	for(int i=0; i < sortedBoxes.size(); i++){
 		ofRectangle cBounds = sortedBoxes[i]->getBounds();
 
-		if(x >= cBounds.x && x <= cBounds.x+cBounds.width+spacing && y >= cBounds.y-spacing && y <= cBounds.y+cBounds.height+spacing){
+		if(x >= cBounds.x && x <= cBounds.x+cBounds.width+spacing && y >= cBounds.y-spacing && y <= cBounds.y+cBounds.height+spacing)
 			result = i;
-		}
 	}
-//	result = sortedBoxes.size()-1;
 	return result;
 }
 
@@ -129,10 +144,7 @@ void ofxLiteGroup::sortBox(ofxLiteBox* box, int position){
 			removeBoxFromSorted(box);
 			sortedBoxes.insert(sortedBoxes.begin()+position, box);
 			
-			ofxLiteEventGroupSorted eventArgs(this, &sortedBoxes);
-			eventArgs.oldPosition = cPosition;
-			eventArgs.newPosition = position;
-			ofNotifyEvent(groupEvents.groupSorted, eventArgs, this);
+			onSort(cPosition, position);
 		}
 	}
 }
@@ -160,13 +172,6 @@ ofxLiteBox* ofxLiteGroup::addBox(string name, ofxLiteBox* value){
 	listenToBox(value);
 	
 	return result;
-}
-
-void ofxLiteGroup::listenToBox(ofxLiteBox* box){
-	if(box != NULL){
-		ofAddListener(box->boxEvents.boxDragged, this, &ofxLiteGroup::childBoxDragged);
-		ofAddListener(box->boxEvents.boxSelected, this, &ofxLiteGroup::childBoxSelected);
-	}
 }
 
 map<string,ofxLiteBox*>* ofxLiteGroup::getBoxes(){
@@ -235,6 +240,8 @@ bool ofxLiteGroup::mouseMoved(int x, int y){
 				result = true;
 		}
 	}
+	if(!result)
+		result = ofxLiteBox::mouseMoved(x, y);
 	return result;
 }
 
@@ -256,11 +263,13 @@ bool ofxLiteGroup::mouseDragged(int x, int y, int button){
 			sortBox(dragBox, mouseIdx);
 		}
 	}
+	if(!result)
+		result = ofxLiteBox::mouseDragged(x, y, button);
 	return result;
 }
 
 bool ofxLiteGroup::mousePressed(int x, int y, int button){
-	bool result = false;
+	bool result = false;	
 	for(map<string,ofxLiteBox*>::iterator boxIt = boxes.begin(); boxIt != boxes.end(); boxIt++){
 		ofxLiteBox* cBox = boxIt->second;
 		if(cBox != NULL){
@@ -268,6 +277,8 @@ bool ofxLiteGroup::mousePressed(int x, int y, int button){
 				result = true;
 		}
 	}
+	if(!result)
+		result = ofxLiteBox::mousePressed(x, y, button);
 	return result;
 }
 
@@ -281,13 +292,42 @@ bool ofxLiteGroup::mouseReleased(int x, int y, int button){
 				result = true;
 		}
 	}
+	if(!result)
+		result = ofxLiteBox::mouseReleased(x, y, button);
 	return result;
+}
+
+void ofxLiteGroup::listenToBox(ofxLiteBox* box){
+	if(box != NULL){
+		ofAddListener(box->boxEvents.boxDragged, this, &ofxLiteGroup::childBoxDragged);
+		ofAddListener(box->boxEvents.boxDragHovered, this, &ofxLiteGroup::childBoxDragHovered);
+		ofAddListener(box->boxEvents.boxHovered, this, &ofxLiteGroup::childBoxHovered);
+		ofAddListener(box->boxEvents.boxPressed, this, &ofxLiteGroup::childBoxPressed);
+		ofAddListener(box->boxEvents.boxSelected, this, &ofxLiteGroup::childBoxSelected);
+		ofAddListener(box->boxEvents.boxTriggered, this, &ofxLiteGroup::childBoxTriggered);
+	}
 }
 
 void ofxLiteGroup::childBoxDragged(ofxLiteEventBoxDragged& event){
 	ofNotifyEvent(boxEvents.boxDragged, event, this);
 }
 
+void ofxLiteGroup::childBoxDragHovered(ofxLiteEventBoxDragHovered& event){
+	ofNotifyEvent(boxEvents.boxDragHovered, event, this);
+}
+
+void ofxLiteGroup::childBoxHovered(ofxLiteEventBoxHovered& event){
+	ofNotifyEvent(boxEvents.boxHovered, event, this);
+}
+
+void ofxLiteGroup::childBoxPressed(ofxLiteEventBoxPressed& event){
+	ofNotifyEvent(boxEvents.boxPressed, event, this);
+}
+
 void ofxLiteGroup::childBoxSelected(ofxLiteEventBoxSelected& event){
 	ofNotifyEvent(boxEvents.boxSelected, event, this);
+}
+
+void ofxLiteGroup::childBoxTriggered(ofxLiteEventBoxTriggered& event){
+	ofNotifyEvent(boxEvents.boxTriggered, event, this);
 }
