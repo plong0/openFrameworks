@@ -6,7 +6,7 @@
 
 class testApp : public ofBaseApp{
 	protected:
-		ofxLiteGroup liteGroup;
+		ofxLiteGroup gui;
 
 	public:
 		void setup();
@@ -19,6 +19,7 @@ class testApp : public ofBaseApp{
 		void liteBoxPressed(ofxLiteEventBoxPressed& event);
 		void liteBoxSelected(ofxLiteEventBoxSelected& event);
 		void liteBoxTriggered(ofxLiteEventBoxTriggered& event);
+		void liteGroupSingleSelected(ofxLiteEventGroupSingleSelected& event);
 		void liteGroupSorted(ofxLiteEventGroupSorted& event);
 
 		void keyPressed  (int key);

@@ -17,6 +17,8 @@ ofxLiteGroup::ofxLiteGroup(string name) : ofxLiteBox(name){
 	setSelectable(false);
 	setTriggerable(false);
 	setSortable(false, false);
+	singleSelected = NULL;
+	setSingleSelect(false);
 	dragBox = NULL;
 }
 
@@ -32,6 +34,15 @@ ofxLiteGroup::~ofxLiteGroup(){
 		}
 	}
 	boxes.clear();
+}
+
+bool ofxLiteGroup::configureAsRadioSet(bool autoSetToggles){
+	setSingleSelect(true, autoSetToggles);
+}
+
+void ofxLiteGroup::onSingleSelect(ofxLiteBox* singleSelected){
+	ofxLiteEventGroupSingleSelected eventArgs(this, singleSelected);
+	ofNotifyEvent(groupEvents.groupSingleSelected, eventArgs, this);
 }
 
 void ofxLiteGroup::onSort(int oldPosition, int newPosition){
@@ -137,6 +148,43 @@ int ofxLiteGroup::getPosition(ofxLiteBox* box){
 	return -1;
 }
 
+void ofxLiteGroup::setSingleSelect(bool singleSelect, bool autoSetToggles, string selectName){
+	this->singleSelect = singleSelect;
+	this->autoSetToggles = autoSetToggles;
+	if(singleSelect && sortedBoxes.size() > 0){
+		ofxLiteBox* selected = NULL;
+		for(int i=0; i < sortedBoxes.size(); i++){
+			if(sortedBoxes[i] != NULL){
+				if(autoSetToggles)
+					sortedBoxes[i]->configureAsToggle();
+			
+				if((sortedBoxes[i]->isSelected() && selected == NULL) || (selectName != "" && sortedBoxes[i]->getName() == selectName))
+					setSingleSelected(sortedBoxes[i]);
+				else if(sortedBoxes[i]->isSelected())
+					sortedBoxes[i]->setSelected(false);
+			}
+		}
+	}
+	else
+		setSingleSelected(NULL);
+}
+
+void ofxLiteGroup::setSingleSelected(ofxLiteBox* select){
+	ofxLiteBox* oldSelect = singleSelected;
+	
+	if(select != this->singleSelected){
+		this->singleSelected = select;
+		if(singleSelect)
+			onSingleSelect(select);
+	}
+	
+	if(oldSelect != NULL && oldSelect != select)
+		oldSelect->setSelected(false);
+	
+	if(select != NULL && !select->isSelected())
+		select->setSelected(true);
+}
+
 void ofxLiteGroup::sortBox(ofxLiteBox* box, int position){
 	if(position >= 0 && position < sortedBoxes.size()){
 		int cPosition = getPosition(box);
@@ -164,8 +212,17 @@ ofxLiteBox* ofxLiteGroup::addBox(string name, ofxLiteBox* value){
 		result = boxes[name]; // we return the old value object if we are replacing it...
 	boxes[name] = value;
 	sortedBoxes.push_back(value);
-	if(autoBoxDrags && boxes[name] != NULL)
-		boxes[name]->setDraggable(sortable);
+	
+	if(boxes[name] != NULL){
+		if(singleSelect){
+			if(autoSetToggles)
+				boxes[name]->configureAsToggle();
+			if(singleSelected == NULL)
+				setSingleSelected(boxes[name]);
+		}
+		if(autoBoxDrags)
+			boxes[name]->setDraggable(sortable);
+	}
 	if(result != NULL)
 		removeBoxFromSorted(result);
 	
@@ -305,6 +362,16 @@ void ofxLiteGroup::listenToBox(ofxLiteBox* box){
 		ofAddListener(box->boxEvents.boxPressed, this, &ofxLiteGroup::childBoxPressed);
 		ofAddListener(box->boxEvents.boxSelected, this, &ofxLiteGroup::childBoxSelected);
 		ofAddListener(box->boxEvents.boxTriggered, this, &ofxLiteGroup::childBoxTriggered);
+		
+		if(box->getBoxType() == OFX_LITE_BOX_TYPE_GROUP)
+			listenToGroup((ofxLiteGroup*)box);
+	}
+}
+
+void ofxLiteGroup::listenToGroup(ofxLiteGroup* group){
+	if(group != NULL){
+		ofAddListener(group->groupEvents.groupSingleSelected, this, &ofxLiteGroup::childGroupSingleSelected);
+		ofAddListener(group->groupEvents.groupSorted, this, &ofxLiteGroup::childGroupSorted);
 	}
 }
 
@@ -326,8 +393,20 @@ void ofxLiteGroup::childBoxPressed(ofxLiteEventBoxPressed& event){
 
 void ofxLiteGroup::childBoxSelected(ofxLiteEventBoxSelected& event){
 	ofNotifyEvent(boxEvents.boxSelected, event, this);
+	if(singleSelect){
+		if(event.isSelected || event.lite == this->singleSelected)
+			setSingleSelected(event.lite);
+	}
 }
 
 void ofxLiteGroup::childBoxTriggered(ofxLiteEventBoxTriggered& event){
 	ofNotifyEvent(boxEvents.boxTriggered, event, this);
+}
+
+void ofxLiteGroup::childGroupSingleSelected(ofxLiteEventGroupSingleSelected& event){
+	ofNotifyEvent(groupEvents.groupSingleSelected, event, this);
+}
+
+void ofxLiteGroup::childGroupSorted(ofxLiteEventGroupSorted& event){
+	ofNotifyEvent(groupEvents.groupSorted, event, this);
 }

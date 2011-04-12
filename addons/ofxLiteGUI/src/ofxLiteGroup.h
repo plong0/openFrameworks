@@ -11,6 +11,14 @@
 
 #include "ofxLiteBox.h"
 
+class ofxLiteEventGroupSingleSelected : public ofxLiteEvent{
+public:
+	ofxLiteBox* selected;
+	ofxLiteEventGroupSingleSelected(ofxLiteBox* lite=NULL, ofxLiteBox* selected=NULL):ofxLiteEvent(lite){
+		this->selected = selected;
+	};
+};
+
 class ofxLiteEventGroupSorted : public ofxLiteEvent{
 public:
 	vector<ofxLiteBox*>* sortedBoxes;
@@ -28,12 +36,16 @@ protected:
 	float spacing;
 	float maxHeight;
 	
-	bool sortable, autoBoxDrags;
-	vector<ofxLiteBox*> sortedBoxes;
-	
 	ofPoint mouse;
 	ofxLiteBox* dragBox;
 	
+	bool sortable, autoBoxDrags;
+	vector<ofxLiteBox*> sortedBoxes;
+	
+	bool singleSelect, autoSetToggles;
+	ofxLiteBox* singleSelected;
+	
+	virtual void onSingleSelect(ofxLiteBox* singleSelected);
 	virtual void onSort(int oldPosition=-1, int newPosition=-1);
 	
 	int getPosition(float x, float y);
@@ -45,14 +57,20 @@ public:
 	ofxLiteGroup(string name="LiteGroup");
 	~ofxLiteGroup();
 	
+	virtual int getBoxType(){ return OFX_LITE_BOX_TYPE_GROUP; };
+	
+	bool configureAsRadioSet(bool autoSetToggles=true);
+	
 	virtual void drawContent(float x=-1.0, float y=-1.0);
 	void update();
 	
 	ofxLiteBox* addBox(string name, ofxLiteBox* value);
-	virtual void listenToBox(ofxLiteBox* box);
 	
 	map<string,ofxLiteBox*>* getBoxes();
 	vector<ofxLiteBox*>* getSortedBoxes();
+	
+	void setSingleSelect(bool singleSelect, bool autoSetToggles=true, string selectName="");
+	void setSingleSelected(ofxLiteBox* select);
 	
 	bool hasBox(string name);
 	ofxLiteBox* removeBox(string name, bool doDelete=true);
@@ -67,6 +85,9 @@ public:
 	virtual bool mousePressed(int x, int y, int button);
 	virtual bool mouseReleased(int x, int y, int button);
 	
+	virtual void listenToBox(ofxLiteBox* box);
+	virtual void listenToGroup(ofxLiteGroup* group);
+	
 	void childBoxDragged(ofxLiteEventBoxDragged& event);
 	void childBoxDragHovered(ofxLiteEventBoxDragHovered& event);
 	void childBoxHovered(ofxLiteEventBoxHovered& event);
@@ -74,7 +95,11 @@ public:
 	void childBoxSelected(ofxLiteEventBoxSelected& event);
 	void childBoxTriggered(ofxLiteEventBoxTriggered& event);
 	
+	void childGroupSingleSelected(ofxLiteEventGroupSingleSelected& event);
+	void childGroupSorted(ofxLiteEventGroupSorted& event);
+	
 	struct{
+		ofEvent<ofxLiteEventGroupSingleSelected> groupSingleSelected;
 		ofEvent<ofxLiteEventGroupSorted> groupSorted;
 	} groupEvents;
 };
